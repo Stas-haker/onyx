@@ -1,0 +1,35 @@
+.miratorg-meetings {
+  color-scheme: dark;
+  --text-01: #777780;
+  --text-02: #aaaab4;
+  --text-03: #c6c6cc;
+  --text-04: #eeeeef;
+  --text-05: #f7f7f8;
+  --text-inverted-04: #eeeeef;
+  --text-inverted-05: #ffffff;
+  --background-neutral-01: #121216;
+  --background-neutral-02: #1a1a20;
+  --background-neutral-03: #24242c;
+  --background-neutral-04: #33333e;
+  --background-tint-00: #15151b;
+  --background-tint-01: #24242c;
+  --background-tint-02: #33333e;
+  --border-01: #33333e;
+  --border-02: #454550;
+  --theme-primary-05: #cb1731;
+  --theme-primary-04: #e02540;
+  --theme-primary-06: #a50f28;
+  background: var(--background-neutral-01);
+  color: var(--text-05);
+  border-top: 4px solid var(--theme-primary-05);
+}
+.miratorg-meetings .meeting-panel {
+  background: var(--background-neutral-02);
+  border: 1px solid var(--border-01);
+  border-radius: 16px;
+  padding: 24px;
+}
+.miratorg-meetings .meeting-metric {
+  border-left: 3px solid var(--theme-primary-05);
+  padding: 12px;
+}

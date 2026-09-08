@@ -674,6 +674,11 @@ const MemoizedAppSidebarInner = memo(function AppSidebarInner() {
         <div className="flex flex-col">
           {newSessionButton}
           {searchChatsButton}
+          {process.env.NEXT_PUBLIC_MEETINGS_ENABLED === "true" && (
+            <SidebarTab href="/app/transcription" folded={folded} icon={SvgSearchMenu}>
+              Транскрибация
+            </SidebarTab>
+          )}
           {isOnyxCraftEnabled && buildButton}
           {folded && moreAgentsButton}
           {folded && newProjectButton}
