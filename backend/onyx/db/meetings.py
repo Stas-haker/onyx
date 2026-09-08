@@ -5,12 +5,14 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import load_only
 
 from onyx.db.engine.sql_engine import get_session_with_current_tenant
 from onyx.db.models import LocalMeeting
 from onyx.error_handling.error_codes import OnyxErrorCode
 from onyx.error_handling.exceptions import OnyxError
 from onyx.meetings.models import MeetingSnapshot
+from onyx.meetings.models import MeetingSummary
 
 
 def owned(session: Session, meeting_id: UUID, owner_id: UUID) -> LocalMeeting:
@@ -31,15 +33,20 @@ def create(session: Session, meeting: LocalMeeting) -> MeetingSnapshot:
     return MeetingSnapshot.model_validate(meeting)
 
 
-def list_owned(session: Session, owner_id: UUID, offset: int) -> list[MeetingSnapshot]:
+def list_owned(session: Session, owner_id: UUID, offset: int) -> list[MeetingSummary]:
     rows = session.scalars(
         select(LocalMeeting)
         .where(LocalMeeting.user_id == owner_id)
+        .options(
+            load_only(
+                *[getattr(LocalMeeting, name) for name in MeetingSummary.model_fields]
+            )
+        )
         .order_by(LocalMeeting.created_at.desc())
         .offset(offset)
         .limit(50)
     )
-    return [MeetingSnapshot.model_validate(row) for row in rows]
+    return [MeetingSummary.model_validate(row) for row in rows]
 
 
 def update(meeting_id: UUID, **values: object) -> None:
@@ -75,6 +82,10 @@ def prepare_retry(session: Session, meeting_id: UUID, owner_id: UUID) -> str:
     stage = "analyze" if row.status == "completed" else "transcribe"
     row.status = f"queued_{stage}"
     row.error = None
+    row.analysis = None
+    if stage == "transcribe":
+        row.segments = []
+        row.duration = None
     row.updated_at = datetime.now(timezone.utc)
     session.commit()
     return stage

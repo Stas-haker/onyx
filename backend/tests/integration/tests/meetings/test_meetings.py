@@ -29,6 +29,10 @@ def test_upload_ownership_and_export(
     )
     assert own.status_code == 200
     assert own.json()["filename"] == "invalid.wav"
+    listing = requests.get(f"{base}/meetings", headers=basic_user.headers, timeout=10)
+    listing.raise_for_status()
+    assert any(item["id"] == meeting_id for item in listing.json())
+    assert all("segments" not in item for item in listing.json())
     for path in (f"/{meeting_id}", f"/{meeting_id}/export?format=json"):
         forbidden = requests.get(
             f"{base}/meetings{path}", headers=admin_user.headers, timeout=10

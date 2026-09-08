@@ -40,7 +40,7 @@ export default function TranscriptionPage() {
     data: meetings,
     error: listError,
     mutate: refreshList,
-  } = useSWR<Meeting[]>(
+  } = useSWR<Omit<Meeting, "segments" | "analysis">[]>(
     `/api/meetings?offset=${offset}`,
     errorHandlingFetcher,
     { refreshInterval: 5000, onErrorRetry: skipRetryOnAuthError }

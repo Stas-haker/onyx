@@ -26,6 +26,7 @@ from onyx.meetings.config import enqueue
 from onyx.meetings.config import max_bytes
 from onyx.meetings.config import storage_path
 from onyx.meetings.models import MeetingSnapshot
+from onyx.meetings.models import MeetingSummary
 from shared_configs.contextvars import get_current_tenant_id
 
 
@@ -90,7 +91,7 @@ def list_meetings(
     offset: int = Query(0, ge=0),
     user: User = Depends(require_permission(Permission.BASIC_ACCESS)),
     session: Session = Depends(get_session),
-) -> list[MeetingSnapshot]:
+) -> list[MeetingSummary]:
     return db.list_owned(session, user.id, offset)
 
 

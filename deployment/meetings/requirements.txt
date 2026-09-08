@@ -1,0 +1,8 @@
+# Isolated from Onyx's application dependencies; Python 3.11, Linux/CUDA 12.
+faster-whisper==1.2.1
+pyannote.audio==4.0.4
+torch==2.8.0
+torchaudio==2.8.0
+torchcodec==0.7.0
+pydantic==2.12.5
+httpx==0.28.1
