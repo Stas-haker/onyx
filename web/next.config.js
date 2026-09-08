@@ -167,7 +167,9 @@ const nextConfig = {
 
 // Determine if Sentry should be enabled
 const sentryEnabled = Boolean(
-  process.env.SENTRY_AUTH_TOKEN && process.env.NEXT_PUBLIC_SENTRY_DSN
+  process.env.NEXT_PUBLIC_MEETINGS_ENABLED !== "true" &&
+    process.env.SENTRY_AUTH_TOKEN &&
+    process.env.NEXT_PUBLIC_SENTRY_DSN
 );
 
 // Sentry webpack plugin options

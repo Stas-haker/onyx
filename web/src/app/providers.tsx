@@ -3,7 +3,9 @@ import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { useEffect } from "react";
 
-const isPostHogEnabled = !!process.env.NEXT_PUBLIC_POSTHOG_KEY;
+const isPostHogEnabled =
+  process.env.NEXT_PUBLIC_MEETINGS_ENABLED !== "true" &&
+  !!process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
 type PHProviderProps = { children: React.ReactNode };
 
