@@ -1,0 +1,114 @@
+# Merge after docker-compose.yml. See docs/local-meetings.md for build/setup.
+x-meeting-environment: &meeting-environment
+  MEETINGS_ENABLED: "true"
+  POSTGRES_HOST: relational_db
+  REDIS_HOST: cache
+  DISABLE_TELEMETRY: "true"
+  SENTRY_DSN: ""
+  MEETINGS_STORAGE_PATH: /var/lib/onyx/meetings
+  MEETINGS_WHISPER_MODEL_PATH: /models/whisper
+  MEETINGS_DIARIZATION_MODEL_PATH: /models/diarization
+  MEETINGS_OLLAMA_URL: ${MEETINGS_OLLAMA_URL:-http://host.docker.internal:11434}
+  MEETINGS_OLLAMA_MODEL: ${MEETINGS_OLLAMA_MODEL:?Set an installed local Ollama model}
+  MEETINGS_STAGE_TIMEOUT: ${MEETINGS_STAGE_TIMEOUT:-21600}
+  MEETINGS_MAX_SECONDS: ${MEETINGS_MAX_SECONDS:-14400}
+  MEETINGS_MAX_UPLOAD_BYTES: ${MEETINGS_MAX_UPLOAD_BYTES:-2147483648}
+  MEETINGS_LANGUAGE: ${MEETINGS_LANGUAGE:-ru}
+  MEETINGS_COMPUTE_TYPE: ${MEETINGS_COMPUTE_TYPE:-float16}
+
+x-meeting-worker: &meeting-worker
+  image: onyx-local-meetings:meetings
+  env_file:
+    - path: .env
+      required: false
+  environment: *meeting-environment
+  volumes:
+    - meeting_files:/var/lib/onyx/meetings
+    - ${MEETINGS_MODELS_DIR:?Set the absolute WSL model directory}:/models:ro
+  depends_on:
+    - api_server
+    - cache
+    - relational_db
+  restart: unless-stopped
+  extra_hosts:
+    - host.docker.internal:host-gateway
+
+services:
+  meeting_storage_init:
+    image: onyx-local-meetings:meetings
+    user: "0:0"
+    command: chown 1001:1001 /var/lib/onyx/meetings
+    volumes:
+      - meeting_files:/var/lib/onyx/meetings
+  api_server:
+    image: onyx-local-backend:meetings
+    user: "1001:1001"
+    depends_on:
+      meeting_storage_init:
+        condition: service_completed_successfully
+    environment: *meeting-environment
+    volumes:
+      - meeting_files:/var/lib/onyx/meetings
+  web_server:
+    image: onyx-local-web:meetings
+    build:
+      args:
+        NEXT_PUBLIC_MEETINGS_ENABLED: "true"
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+      NEXT_PUBLIC_SENTRY_DSN: ""
+      SENTRY_DSN: ""
+  meeting_transcribe_0:
+    <<: *meeting-worker
+    command: celery -A onyx.background.celery.apps.meetings:celery_app worker -Q meetings_transcribe --pool=threads --concurrency=1 --hostname=meeting-transcribe-0@%h
+    environment:
+      <<: *meeting-environment
+      CUDA_VISIBLE_DEVICES: "0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MEETINGS_TRANSCRIBE_GPU_0:-0}"]
+              capabilities: [gpu]
+  meeting_transcribe_1:
+    <<: *meeting-worker
+    command: celery -A onyx.background.celery.apps.meetings:celery_app worker -Q meetings_transcribe --pool=threads --concurrency=1 --hostname=meeting-transcribe-1@%h
+    environment:
+      <<: *meeting-environment
+      CUDA_VISIBLE_DEVICES: "0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MEETINGS_TRANSCRIBE_GPU_1:-1}"]
+              capabilities: [gpu]
+  meeting_diarize:
+    <<: *meeting-worker
+    command: celery -A onyx.background.celery.apps.meetings:celery_app worker -Q meetings_diarize --pool=threads --concurrency=1 --hostname=meeting-diarize@%h
+    environment:
+      <<: *meeting-environment
+      CUDA_VISIBLE_DEVICES: "0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${MEETINGS_DIARIZE_GPU:-2}"]
+              capabilities: [gpu]
+  meeting_analyze:
+    <<: *meeting-worker
+    command: celery -A onyx.background.celery.apps.meetings:celery_app worker -Q meetings_analyze --pool=threads --concurrency=1 --hostname=meeting-analyze@%h
+    environment:
+      <<: *meeting-environment
+      CUDA_VISIBLE_DEVICES: ""
+
+volumes:
+  meeting_files:
+
+# Prevent internet egress for the compose services after dependencies are staged.
+# The existing host Ollama process needs its own host firewall and NO_CLOUD setting.
+networks:
+  default:
+    internal: true

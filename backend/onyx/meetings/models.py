@@ -45,7 +45,7 @@ class Analysis(BaseModel):
     explanation: str
 
 
-class MeetingSnapshot(BaseModel):
+class MeetingSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     filename: str
@@ -55,5 +55,8 @@ class MeetingSnapshot(BaseModel):
     updated_at: datetime
     duration: float | None
     error: str | None
+
+
+class MeetingSnapshot(MeetingSummary):
     segments: list[Segment]
     analysis: dict | None
