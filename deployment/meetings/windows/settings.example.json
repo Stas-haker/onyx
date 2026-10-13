@@ -1,0 +1,9 @@
+{
+  "distro": "YOUR_DISTRO",
+  "linuxUser": "YOUR_LINUX_USER",
+  "linuxPackagePath": "/absolute/path/to/windows-operations-package",
+  "repo": "/absolute/path/to/repository",
+  "backups": "/absolute/path/to/private-backups",
+  "project": "YOUR_COMPOSE_PROJECT",
+  "windowsTimeZone": "YOUR_WINDOWS_TIMEZONE_ID"
+}
