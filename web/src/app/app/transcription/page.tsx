@@ -7,6 +7,7 @@ import { Content } from "@opal/layouts";
 import InputTypeIn from "@/refresh-components/inputs/InputTypeIn";
 import { errorHandlingFetcher, skipRetryOnAuthError } from "@/lib/fetcher";
 import type { Meeting } from "@/app/app/transcription/interfaces";
+import ProcessingStages from "@/app/app/transcription/ProcessingStages";
 import "@/app/app/transcription/theme.css";
 
 const labels: Record<string, string> = {
@@ -214,6 +215,10 @@ export default function TranscriptionPage() {
                 description={`${
                   labels[meeting.status] || meeting.status
                 } · ${time(meeting.duration || 0)}`}
+              />
+              <ProcessingStages
+                status={meeting.status}
+                stale={Boolean(detailError)}
               />
               {meeting.error && (
                 <div role="alert">

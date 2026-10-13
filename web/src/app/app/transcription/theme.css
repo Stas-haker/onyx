@@ -33,3 +33,20 @@
   border-left: 3px solid var(--theme-primary-05);
   padding: 12px;
 }
+.miratorg-meetings .meeting-stages {
+  border: 1px solid var(--border-01);
+  border-radius: 12px;
+  padding: 16px;
+}
+.miratorg-meetings .meeting-stage {
+  border-left: 3px solid var(--border-02);
+  padding: 12px;
+  background: var(--background-neutral-01);
+}
+.miratorg-meetings .meeting-stage[data-state="active"] {
+  border-color: var(--theme-primary-05);
+  background: var(--background-tint-01);
+}
+.miratorg-meetings .meeting-stage[data-state="done"] {
+  border-color: var(--text-03);
+}
