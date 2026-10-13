@@ -45,3 +45,42 @@ names above; this does not stop services already running.
 Validation: Python/PowerShell syntax and isolated configured-container checks.
 The pre-generalization workflows were exercised on a deployment; these configurable
 variants still need WSL/Docker and scheduler integration testing before rollout.
+
+## Scheduler launch diagnostics
+
+Launch.ps1 starts WSL through a hidden process with an empty input file and separate
+stdout/stderr logs under `%LOCALAPPDATA%\OnyxMeetings\launcher-logs`. The task
+returns the WSL exit code. This preserves the launch method verified with a real
+scheduled-task invocation, archive verification, isolated database restore and
+portal restart. The parameterized version still requires validation on a new host.
+Exit zero alone is insufficient: inspect the Python log for BACKUP VERIFIED and
+SUCCESS, since busy scheduled runs can be skipped. The next overnight trigger
+has not yet been verified on the reference deployment.
+
+## Docker Desktop relay and graceful API shutdown
+
+Use the following Compose files in order, with the same project name as the
+existing deployment: docker-compose.yml, docker-compose.onyx-lite.yml,
+docker-compose.meetings.yml, docker-compose.local-access.yml,
+docker-compose.ollama-relay.yml. Local .env settings and GPU allocation are not
+included here. Preserve them when reconciling an existing installation.
+
+The API command uses `exec uvicorn` so shutdown signals reach the server. The relay
+configuration is baked into its image to avoid the file bind mount that failed
+after a Docker Desktop restart. From deployment/docker_compose build it with:
+
+```sh
+docker build --pull=false -t miratorg-ollama-relay:local relay-image
+```
+
+Keep ollama-relay.conf and relay-image/default.conf identical when changing the
+relay; rebuild the image after edits. The former is retained for backup compatibility.
+The relay exposes only /api/tags, /api/show and /api/chat to the meeting worker;
+it has no published host port. It forwards to existing Windows Ollama at
+host.docker.internal:11434. Ollama must already be reachable from Docker Desktop.
+These files do not install, stop or reconfigure Ollama or reserve GPUs.
+
+The local_access network provides host connectivity; it is not an outbound firewall.
+Retain localhost-only portal port bindings in local settings. Do not treat these
+overlays alone as proof of network isolation. Reconcile files during an idle
+maintenance window; do not blindly replace .env or install duplicate scheduled tasks.
