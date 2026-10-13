@@ -1,0 +1,10 @@
+services:
+  nginx:
+    networks:
+      default: {}
+      local_access: {}
+
+networks:
+  local_access:
+    driver: bridge
+    internal: false

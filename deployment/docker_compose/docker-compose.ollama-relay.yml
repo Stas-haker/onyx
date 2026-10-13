@@ -1,0 +1,14 @@
+services:
+  ollama-relay:
+    image: miratorg-ollama-relay:local
+    restart: unless-stopped
+    networks:
+      - default
+      - local_access
+
+  meeting_analyze:
+    environment:
+      MEETINGS_OLLAMA_URL: http://ollama-relay:8080
+    depends_on:
+      ollama-relay:
+        condition: service_started
