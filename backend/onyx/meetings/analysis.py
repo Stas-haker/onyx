@@ -170,15 +170,54 @@ def analyze(segments: list[Segment], duration: float, agenda: str) -> dict:
         topics.extend(partial.topics)
         partials.append(partial)
     metrics = timeline(topics, segments, duration, agenda)
+    original_partials = list(partials)
+
+    def complete_without_merge() -> dict:
+        # Retain all validated chunk results, rather than truncate facts to fit.
+        def unique(values):
+            result = []
+            seen = set()
+            for value in values:
+                key = json.dumps(value, ensure_ascii=False, sort_keys=True)
+                if key not in seen:
+                    seen.add(key)
+                    result.append(value)
+            return result
+
+        def sections(field):
+            return "\n\n".join(
+                f"Часть {i + 1}\n{getattr(part, field)}"
+                for i, part in enumerate(original_partials)
+            )
+
+        return {
+            "summary": sections("summary"),
+            "minutes": sections("minutes"),
+            "decisions": unique([v for p in original_partials for v in p.decisions]),
+            "actions": unique([a.model_dump() for p in original_partials for a in p.actions]),
+            "effectiveness_score": round(sum(p.effectiveness_score for p in original_partials) / len(original_partials)),
+            "explanation": "Итоговая оценка — среднее оценок частей, не отдельная оценка всей встречи.\n\n" + sections("explanation"),
+            **metrics,
+            "model": os.environ["MEETINGS_OLLAMA_MODEL"],
+            "duration": duration,
+            "merge_mode": "validated_parts",
+            "warnings": ["Объём промежуточных резюме превысил лимит объединения. Сохранён протокол по частям, без обрезки; удалены только точные дубликаты решений и поручений."],
+        }
     # Hierarchical bounded reduction prevents silent truncation of long meetings.
     while len(partials) > 1:
         merged: list[Analysis] = []
         for index in range(0, len(partials), 2):
             pair = partials[index : index + 2]
+            if len(pair) == 1:
+                merged.append(pair[0])
+                continue
             data = [part.model_dump(exclude={"topics"}) for part in pair]
             if len(json.dumps(data, ensure_ascii=False).encode("utf-8")) > 16000:
-                raise ValueError("Summaries exceed local context budget")
-            merged.append(ask_ollama({"agenda": agenda, "merge_parts": data}))
+                return complete_without_merge()
+            payload = {"agenda": agenda, "merge_parts": data}
+            if len(json.dumps(payload, ensure_ascii=False).encode("utf-8")) > 20000:
+                return complete_without_merge()
+            merged.append(ask_ollama(payload))
         partials = merged
     return {
         **partials[0].model_dump(exclude={"topics"}),
