@@ -1,9 +1,7 @@
 import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@opal/components";
-import Logo from "@/refresh-components/Logo";
+import { Button, Text } from "@opal/components";
 import { SvgSidebar } from "@opal/icons";
-import { useSettingsContext } from "@/providers/SettingsProvider";
 
 interface LogoSectionProps {
   folded?: boolean;
@@ -11,13 +9,17 @@ interface LogoSectionProps {
 }
 
 function LogoSection({ folded, onFoldClick }: LogoSectionProps) {
-  const settings = useSettingsContext();
-  const logoDisplayStyle = settings.enterpriseSettings?.logo_display_style;
-
   const logo = useMemo(
     () => (
-      <div className="px-1">
-        <Logo folded={folded} size={28} />
+      <div className="px-1 flex flex-col" aria-label="Miratorg">
+        <Text font="heading-h3" color="text-05">
+          {folded ? "M" : "Miratorg"}
+        </Text>
+        {!folded && (
+          <Text font="secondary-body" color="text-03">
+            Powered by Onyx
+          </Text>
+        )}
       </div>
     ),
     [folded]
@@ -42,15 +44,13 @@ function LogoSection({ folded, onFoldClick }: LogoSectionProps) {
     <div className="flex flex-row justify-between items-start pt-3 px-2">
       {folded === undefined ? (
         logo
-      ) : folded && logoDisplayStyle !== "name_only" ? (
+      ) : folded ? (
         <>
           <div className="group-hover/SidebarWrapper:hidden">{logo}</div>
           <div className="hidden group-hover/SidebarWrapper:flex">
             {closeButton}
           </div>
         </>
-      ) : folded ? (
-        closeButton
       ) : (
         <>
           {logo}
